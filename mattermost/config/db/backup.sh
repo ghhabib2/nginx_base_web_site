@@ -2,13 +2,13 @@
 # Backup storage directory 
 backupfolder=/var/backups
 # Notification email address 
-recipient_email=username@mail.com
+recipient_email=ghhabib2@gmail.com
 # MySQL user
 user=dev
 # MySQL password
-password=dev123
+password=p_8)o[Z6]8h9sp4Lwj4eN8REl1kY5.pc
 # MySQL database
-dbName=db
+dbName=engloset_final_database
 # Number of days to store the backup 
 keep_day=30
 sqlfile=$backupfolder/$dbName-$(date +%d-%m-%Y_%H-%M-%S).sql

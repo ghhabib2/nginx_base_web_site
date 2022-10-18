@@ -1,5 +1,6 @@
 ARG MYSQL_VERSION=latest
-FROM mysql:${MYSQL_VERSION}
+# FROM mysql:${MYSQL_VERSION}
+FROM mysql:8.0.31-debian
 
 # (START) Securing your database might need some of the following actions
 # You have to run mysql-secure-installation after building the container
@@ -15,13 +16,20 @@ FROM mysql:${MYSQL_VERSION}
 COPY ./config/db/backup.sh /home/backup.sh
 # (END) change backup.sh accordingly to fit your needs
 
+# (START) change mysql.cnf accordingly to fit your needs
+COPY ./config/db/mysql.cnf /etc/mysql/conf.d/mysql.cnf
+# (END) change mysql.cnf accordingly to fit your needs
+
 RUN chmod 770 /home/backup.sh
 
 # (START) Sometimes it throws an exception because of ca-certificate
 RUN rm /etc/apt/sources.list.d/mysql.list
 # (END) Sometimes it throws an exception because of ca-certificate
 
-RUN apt update && apt install -y vim ca-certificates git zip unzip cron tzdata dos2unix && cd /home/ && \
+# Copy the replacment of the resource.list
+# COPY ./config/sources.list /etc/apt/sources.list
+
+RUN apt-get update && apt-get install -y vim ca-certificates git zip unzip cron tzdata dos2unix && cd /home/ && \
          git clone https://github.com/meob/MySAT.git
 
 # (START) change cron.rule accordingly to fit your needs

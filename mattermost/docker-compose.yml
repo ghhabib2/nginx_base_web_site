@@ -1,0 +1,142 @@
+version: '3.7'
+
+services:
+  app:
+    deploy:
+      replicas: ${SCALE}
+    build: 
+      context: .
+      dockerfile: php.Dockerfile
+    image: my_app_image  
+    restart: always
+    environment:
+      - TZ=${TZ_V}
+    volumes:
+      - ./app_files:/var/www
+    depends_on:
+      - db
+      - nginx
+  db:
+    hostname: db_hostname
+    build: 
+      context: .
+      dockerfile: mysql.Dockerfile
+    image: my_db_image
+    container_name: container_mysql
+    environment:
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_ROOT_PASSWORD=${ROOT_PASS}
+      - MYSQL_USER=${USER_NAME}
+      - MYSQL_PASSWORD=${USER_PASS}
+      - TZ=${TZ_V}
+    restart: always
+    cap_add:
+      - SYS_NICE
+    volumes:
+      - ./data/backups:/var/backups
+      - mysql-data:/var/lib/mysql
+  phpmyadmin:  
+    hostname: phpmyadmin_hostname
+    build: 
+      context: .
+      dockerfile: phpmyadmin.Dockerfile
+      args:
+        SERVER_NAME_ARG: ${MY_DOMAIN}
+    image: image_phpmyadmin
+    container_name: phpmyadmin_container    
+    restart: always
+    environment:
+      PMA_HOST: db
+      SERVER_NAME: ${MY_DOMAIN}
+      PMA_ABSOLUTE_URI: https://${MY_DOMAIN}/phpmyadmin
+      MEMORY_LIMIT: -1
+      UPLOAD_LIMIT: 512M
+      MAX_EXECUTION_TIME: 0    
+    depends_on:
+      - db
+      - nginx
+  postgres:
+    image: postgres:${POSTGRES_IMAGE_TAG}
+    restart: ${RESTART_POLICY}
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    volumes:
+      - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
+    environment:
+      # timezone inside container
+      - TZ=${TZ_V}
+
+      # necessary Postgres options/variables
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+    depends_on:
+      - nginx
+
+  mattermost:
+    depends_on:
+      - postgres
+    image: mattermost/${MATTERMOST_IMAGE}:${MATTERMOST_IMAGE_TAG}
+    restart: ${RESTART_POLICY}
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 200
+    read_only: ${MATTERMOST_CONTAINER_READONLY}
+    tmpfs:
+      - /tmp
+    volumes:
+      - ${MATTERMOST_CONFIG_PATH}:/mattermost/config:rw
+      - ${MATTERMOST_DATA_PATH}:/mattermost/data:rw
+      - ${MATTERMOST_LOGS_PATH}:/mattermost/logs:rw
+      - ${MATTERMOST_PLUGINS_PATH}:/mattermost/plugins:rw
+      - ${MATTERMOST_CLIENT_PLUGINS_PATH}:/mattermost/client/plugins:rw
+      - ${MATTERMOST_BLEVE_INDEXES_PATH}:/mattermost/bleve-indexes:rw
+      # When you want to use SSO with GitLab, you have to add the cert pki chain of GitLab inside Alpine
+      # to avoid Token request failed: certificate signed by unknown authority 
+      # (link: https://github.com/mattermost/mattermost-server/issues/13059 and https://github.com/mattermost/docker/issues/34)
+      # - ${GITLAB_PKI_CHAIN_PATH}:/etc/ssl/certs/pki_chain.pem:ro
+    environment:
+      # timezone inside container
+      - TZ=${TZ_V}
+      # necessary Mattermost options/variables (see env.example)
+      - MM_SQLSETTINGS_DRIVERNAME
+      - MM_SQLSETTINGS_DATASOURCE
+      # necessary for bleve
+      - MM_BLEVESETTINGS_INDEXDIR
+      # additional settings
+      - MM_SERVICESETTINGS_SITEURL
+  
+  nginx:
+    hostname: nginx_hostname
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    image: nginx_image
+    container_name: nginx_container
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - TZ=${TZ_V}
+    volumes:
+      - ./app_files:/var/www
+      - ./data/backups:/var/backups
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+volumes:
+  mysql-data:
+    name: mysql-data
+    external: true
+# Shared volume for Let's Encrypt certificate renewal with a webroot
+  shared-webroot:
+    name: shared-webroot
+
+# This network name is being used for Let's Encrypt certificate renewal
+networks:
+  default:
+    name: mattermost

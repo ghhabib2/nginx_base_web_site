@@ -98,58 +98,58 @@ else
     echo -e "\033[0;31m \t * clonning skipped because app_files is not empty \033[0m"
 fi
 
-if [ -d ./mailcow ]
-then
-    echo -e "\033[1;36m * mailcow directory exists \033[0m"
-    echo -ne "\033[0;31m \t Would you like to remove the ./mailcow directory? (y/n) YOU WILL LOSE THE DATA THAT YOU HAVE IN IT! \033[0m" 
-    read RES
-    if [ "$RES" == "y" ]
-    then
-        rm -r ./mailcow
-    fi 
-else
-    echo -e "\033[1;36m * mailcow directory doesn't exist and is being created \033[0m"
-    mkdir ./mailcow
-fi
-echo -e "\033[1;36m * clonning mailcow repository \033[0m"
+# if [ -d ./mailcow ]
+# then
+#     echo -e "\033[1;36m * mailcow directory exists \033[0m"
+#     echo -ne "\033[0;31m \t Would you like to remove the ./mailcow directory? (y/n) YOU WILL LOSE THE DATA THAT YOU HAVE IN IT! \033[0m" 
+#     read RES
+#     if [ "$RES" == "y" ]
+#     then
+#         rm -r ./mailcow
+#     fi 
+# else
+#     echo -e "\033[1;36m * mailcow directory doesn't exist and is being created \033[0m"
+#     mkdir ./mailcow
+# fi
+# echo -e "\033[1;36m * clonning mailcow repository \033[0m"
 
-if [ -z "$(ls -A ./mailcow)" ]
-then
-    echo -e "\033[1;36m \t * clonning \033[0m"
-    git clone https://github.com/mailcow/mailcow-dockerized.git ./mailcow
-else
-    echo -e "\033[0;31m \t * clonning skipped because mailcow is not empty \033[0m"
-fi
-echo -e "\033[1;36m * Configuring mailcow by generate_config.sh \033[0m"
-cd ./mailcow/ 
-./generate_config.sh 
+# if [ -z "$(ls -A ./mailcow)" ]
+# then
+#     echo -e "\033[1;36m \t * clonning \033[0m"
+#     git clone https://github.com/mailcow/mailcow-dockerized.git ./mailcow
+# else
+#     echo -e "\033[0;31m \t * clonning skipped because mailcow is not empty \033[0m"
+# fi
+# echo -e "\033[1;36m * Configuring mailcow by generate_config.sh \033[0m"
+# cd ./mailcow/ 
+# ./generate_config.sh 
 
-echo -e "\033[1;36m * mailcow Https is set to 127.0.0.1:8443 \033[0m"
-sed -i -r 's/HTTPS_PORT=(.*)/HTTPS_PORT=8443/' ./mailcow.conf
-# sed -i -r 's/HTTPS_BIND=(.*)/HTTPS_BIND=127.0.0.1/' ./mailcow.conf
+# echo -e "\033[1;36m * mailcow Https is set to 127.0.0.1:8443 \033[0m"
+# sed -i -r 's/HTTPS_PORT=(.*)/HTTPS_PORT=8443/' ./mailcow.conf
+# # sed -i -r 's/HTTPS_BIND=(.*)/HTTPS_BIND=127.0.0.1/' ./mailcow.conf
 
-echo -e "\033[1;36m * mailcow Http is set to 127.0.0.1:8080 \033[0m"
+# echo -e "\033[1;36m * mailcow Http is set to 127.0.0.1:8080 \033[0m"
 
-sed -i -r 's/HTTP_PORT=(.*)/HTTP_PORT=8080/' ./mailcow.conf
-# sed -i -r 's/HTTP_BIND=(.*)/HTTP_BIND=127.0.0.1/' ./mailcow.conf
+# sed -i -r 's/HTTP_PORT=(.*)/HTTP_PORT=8080/' ./mailcow.conf
+# # sed -i -r 's/HTTP_BIND=(.*)/HTTP_BIND=127.0.0.1/' ./mailcow.conf
 
 
-LINE_NO=$(grep -nP '(.*)? - ("\$\{HTTPS.*)' ./docker-compose.yml | cut -d ":" -f 1)
-LINE_NO=$((LINE_NO-1))
+# LINE_NO=$(grep -nP '(.*)? - ("\$\{HTTPS.*)' ./docker-compose.yml | cut -d ":" -f 1)
+# LINE_NO=$((LINE_NO-1))
 
-sed -i -r "${LINE_NO} s/^/#/" ./docker-compose.yml
+# sed -i -r "${LINE_NO} s/^/#/" ./docker-compose.yml
 
-sed -i -r 's/(.*)? - ("\$\{HTTPS.*)/\1# - \2/' ./docker-compose.yml
-sed -i -r 's/(.*)? - ("\$\{HTTP.*)/\1# - \2/' ./docker-compose.yml
+# sed -i -r 's/(.*)? - ("\$\{HTTPS.*)/\1# - \2/' ./docker-compose.yml
+# sed -i -r 's/(.*)? - ("\$\{HTTP.*)/\1# - \2/' ./docker-compose.yml
 
-echo -e "\033[1;36m * restarting mailcow \033[0m"
-# add -v if you want to remove the database
-docker compose down
-docker compose up -d
+# echo -e "\033[1;36m * restarting mailcow \033[0m"
+# # add -v if you want to remove the database
+# docker compose down
+# docker compose up -d
 
-cd ..
+# cd ..
 
-echo -e "\033[1;36m * Configuring .env file \033[0m"
+# echo -e "\033[1;36m * Configuring .env file \033[0m"
 
 if [ -f ".env" ]
 then
