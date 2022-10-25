@@ -58,22 +58,22 @@ apt install git
 
 
 
-echo -e "\033[1;36m * Installing docker \033[0m"
+# echo -e "\033[1;36m * Installing docker \033[0m"
 
-mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-apt update && \
-apt install ca-certificates \
-    curl \
-    gnupg \
-    lsb-release \
-    docker-ce \
-    docker-ce-cli \
-    containerd.io \
-    docker-compose-plugin
+# mkdir -p /etc/apt/keyrings
+# curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+# echo \
+#   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+#   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+# apt update && \
+# apt install ca-certificates \
+#     curl \
+#     gnupg \
+#     lsb-release \
+#     docker-ce \
+#     docker-ce-cli \
+#     containerd.io \
+#     docker-compose-plugin
 
 if [ -d ./app_files ]
 then
@@ -151,6 +151,24 @@ fi
 
 # echo -e "\033[1;36m * Configuring .env file \033[0m"
 
+echo -e "\033[1;36m * Install Mattermost \033[0m"
+
+
+docker-compose down
+
+if [ -d ./volumes ]
+then
+    echo -e "\033[1;36m * Volume is exist. \033[0m"
+else
+    echo -e "\033[1;36m * Generate the volume folder \033[0m"
+    mkdir -p ./volumes/app/mattermost/{config,data,logs,plugins,client/plugins,bleve-indexes}
+    chown -R 2000:2000 ./volumes/app/mattermost
+fi
+
+docker-compose up -d mattermost
+
+echo -e "\033[1;36m * Finish installing the mattermost \033[0m"
+
 if [ -f ".env" ]
 then
     echo -ne "\033[0;31m \t A .env file already exists. Do you want to delete it? (y/n) if you do not remove the .env file it will be used for the configuration of docker-compose.yml \033[0m"
@@ -177,9 +195,9 @@ n=$(sed -nr '/SCALE=(\d*)/p' .env | cut -d '=' -f 2)
 
 for ((i=1;i<=n;i++))
 do
-    str+="server ${currentdir}-app-${i}:9000;\n"
-    docker stop "${currentdir}-app-${i}:9000"
-    docker rm "${currentdir}-app-${i}:9000"
+    str+="server ${currentdir}_app_${i}:9000;\n"
+    docker stop "${currentdir}_app_${i}:9000;"
+    docker rm "${currentdir}_app_${i}:9000;"
 done
 str+="}"
 
@@ -238,16 +256,15 @@ sed -i -r "s/dbName=.*/dbName=${DB_NAME}/" ./config/db/backup.sh
 
 echo -e "\033[1;36m * rebuilding and starting containers \033[0m"
 
-docker compose down
-docker compose build
-docker compose up -d
+docker-compose build
+docker-compose up -d
 
 for ((i=1;i<=n;i++))
 do    
-    docker network connect mailcowdockerized_mailcow-network "${currentdir}-app-${i}"
+    docker network connect dockerized-nginx-php-mysql-phpmyadmin-mailcow_default "${currentdir}_app_${i}"
 done
-docker network connect mailcowdockerized_mailcow-network container_mysql
-docker network connect mailcowdockerized_mailcow-network phpmyadmin_container
-docker network connect mailcowdockerized_mailcow-network nginx_container
+docker network connect dockerized-nginx-php-mysql-phpmyadmin-mailcow_default container_mysql
+docker network connect dockerized-nginx-php-mysql-phpmyadmin-mailcow_default phpmyadmin_container
+docker network connect dockerized-nginx-php-mysql-phpmyadmin-mailcow_default nginx_container
 
 docker stop init-mysql
